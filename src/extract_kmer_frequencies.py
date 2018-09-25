@@ -4,13 +4,17 @@ import numpy as np
 from Bio import SeqIO
 
 
-def extract_kmer_frequencies(input, output, k):
+def extract_kmer_frequencies(input, output, k, characters='nuc'):
   k = int(k)
-  N = 4**k
-  kmer_tuples = it.product('ACGT', repeat=k)
+  if characters == 'nuc':
+    characters = 'AGCT'
+  else:
+    characters = 'ACDEFGHIKLMNPQRSTVWY'
+  N = len(characters)**k
+  kmer_tuples = it.product(characters, repeat=k)
   kmer_to_index = { ''.join(kmer): index for index, kmer in enumerate(kmer_tuples) }
   output_file = open(output, 'w')
-  kmers = [''.join(kmer) for kmer in it.product('ACGT', repeat=k)]
+  kmers = [''.join(kmer) for kmer in it.product(characters, repeat=k)]
   output_file.write(','.join(['header']+kmers))
 
   records = SeqIO.parse(input, 'fasta')

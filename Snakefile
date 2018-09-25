@@ -8,13 +8,29 @@ rule subset:
   run:
     subset(input.fasta, output.fasta, wildcards.subset)
 
-rule alignment:
+rule alignment_bam:
   input:
     rules.subset.output.fasta
   output:
-    "output/HIV-LANL_subset-{subset}.fasta"
+    "output/HIV-LANL_subset-{subset}.bam"
   shell:
-    "mafft {input} > {output}"
+    "bealign -r HXB2_env {input} {output}"
+
+rule alignment:
+  input:
+    rules.alignment_bam.output
+  output:
+    "output/HIV-LANL_subset-{subset}_nuc-char.fasta"
+  shell:
+    "bam2msa {input} {output}"
+
+rule protein_alignment:
+  input:
+    rules.alignment.output
+  output:
+    "output/HIV-LANL_subset-{subset}_aa-char.fasta"
+  shell:
+    "translate {input} > {output}"
 
 rule tn93_distances:
   input:
@@ -26,9 +42,9 @@ rule tn93_distances:
 
 rule kmers:
   input:
-    fasta=rules.subset.output.fasta
+    fasta="output/HIV-LANL_subset-{subset}_{char}-char.fasta"
   output:
-    csv="output/HIV-LANL_subset-{subset}_{k}-mers.csv"
+    csv="output/HIV-LANL_subset-{subset}_{k}-mers_{char}-char.csv"
   run:
     extract_kmer_frequencies(input.fasta, output.csv, wildcards.k)
 
@@ -36,7 +52,7 @@ rule tsne_distances:
   input:
     csv=rules.kmers.output.csv
   output:
-    csv="output/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim_tsne.csv"
+    csv="output/HIV-LANL_subset-{subset}_{k}-mers_{char}-char_{dimension}-dim_tsne.csv"
   run:
     tsne_distances(input.csv, output.csv, wildcards.dimension)
 
@@ -45,21 +61,22 @@ rule pairwise_information:
     rules.tn93_distances.output,
     rules.tsne_distances.output.csv
   output:
-    "output/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim.csv"
+    "output/HIV-LANL_subset-{subset}_{k}-mers_{char}-char_{dimension}-dim.csv"
   run:
-    pairwise_information(wildcards.subset, wildcards.k, wildcards.dimension)
+    pairwise_information(wildcards.subset, wildcards.k,  wildcards.char, wildcards.dimension)
 
 rule plot:
   input:
     rules.pairwise_information.output
   output:
-    "plots/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim.png"
+    "plots/HIV-LANL_subset-{subset}_{k}-mers_{char}-char_{dimension}-dim.png"
   run:
-    plot(wildcards.subset, wildcards.k, wildcards.dimension)
+    plot(wildcards.subset, wildcards.k, wildcards.char, wildcards.dimension)
 
-SUBSETS = ["1000"]
-KS = ["3", "4", "5"]
+SUBSETS = ["100"]
+NUCLEOTIDE_KS = ["3", "4", "5"]
 DIMENSIONS = ["2", "3"]
 rule all:
   input:
-    expand("plots/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim.png", subset=SUBSETS, k=KS, dimension=DIMENSIONS)
+    expand("plots/HIV-LANL_subset-{subset}_{k}-mers_nuc-char_{dimension}-dim.png", subset=SUBSETS, k=NUCLEOTIDE_KS, dimension=DIMENSIONS),
+    expand("plots/HIV-LANL_subset-{subset}_2-mers_aa-char_{dimension}-dim.png", subset=SUBSETS, dimension=DIMENSIONS),

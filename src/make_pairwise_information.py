@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 
 
-def pairwise_information(subset, k, dimension):
+def pairwise_information(subset, k, char, dimension):
   subset = int(subset)
   k = int(k)
   dimension = int(dimension)
-  parameters = ( subset, k, dimension )
+  parameters = ( subset, k, char, dimension )
 
-  reduced_csv_filename = "output/HIV-LANL_subset-%d_%d-mers_%d-dim_tsne.csv" % parameters
+  reduced_csv_filename = "output/HIV-LANL_subset-%d_%d-mers_%s-char_%d-dim_tsne.csv" % parameters
   reduced_dict = {}
   with open(reduced_csv_filename) as csv_file:
     reduced_csv = csv.DictReader(csv_file)
@@ -32,6 +32,6 @@ def pairwise_information(subset, k, dimension):
       tn93_df['TSNE Euclidean Distance'] += (tn93_df['x'+str(i)]-tn93_df['y'+str(i)])**2
   tn93_df['TSNE Euclidean Distance'] = np.sqrt(tn93_df['TSNE Euclidean Distance'])
 
-  pairwise_filename = "output/HIV-LANL_subset-%d_%d-mers_%d-dim.csv" % parameters
+  pairwise_filename = "output/HIV-LANL_subset-%d_%d-mers_%s-char_%d-dim.csv" % parameters
   tn93_df.to_csv(pairwise_filename, index=False)
 
