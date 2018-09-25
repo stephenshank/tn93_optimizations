@@ -1,14 +1,16 @@
+from src import *
+
 rule subset:
   input:
-    "input/HIV-LANL-unaligned.fasta"
+    fasta="input/HIV-LANL-unaligned.fasta"
   output:
-    "output/HIV-LANL-unaligned_subset-{subset}.fasta"
-  shell:
-    "python subset.py -i {input} -o {output} -n {wildcards.subset}"
+    fasta="output/HIV-LANL-unaligned_subset-{subset}.fasta"
+  run:
+    subset(input.fasta, output.fasta, wildcards.subset)
 
 rule alignment:
   input:
-    "output/HIV-LANL-unaligned_subset-{subset}.fasta"
+    rules.subset.output.fasta
   output:
     "output/HIV-LANL_subset-{subset}.fasta"
   shell:
@@ -16,7 +18,7 @@ rule alignment:
 
 rule tn93_distances:
   input:
-    "output/HIV-LANL_subset-{subset}.fasta"
+    rules.alignment.output
   output:
     "output/HIV-LANL_subset-{subset}_tn93.csv"
   shell:
@@ -24,36 +26,36 @@ rule tn93_distances:
 
 rule kmers:
   input:
-    "output/HIV-LANL-unaligned_subset-{subset}.fasta"
+    fasta=rules.subset.output.fasta
   output:
-    "output/HIV-LANL_subset-{subset}_{k}-mers.csv"
-  shell:
-    "python extract_kmer_frequencies.py -i {input} -o {output} -k {wildcards.k}"
+    csv="output/HIV-LANL_subset-{subset}_{k}-mers.csv"
+  run:
+    extract_kmer_frequencies(input.fasta, output.csv, wildcards.k)
 
 rule tsne_distances:
   input:
-    "output/HIV-LANL_subset-{subset}_{k}-mers.csv"
+    csv=rules.kmers.output.csv
   output:
-    "output/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim_tsne.csv"
-  shell:
-    "python run_tsne.py -i {input} -o {output} -d {wildcards.dimension}"
+    csv="output/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim_tsne.csv"
+  run:
+    tsne_distances(input.csv, output.csv, wildcards.dimension)
 
 rule pairwise_information:
   input:
-    "output/HIV-LANL_subset-{subset}_tn93.csv",
-    "output/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim_tsne.csv"
+    rules.tn93_distances.output,
+    rules.tsne_distances.output.csv
   output:
     "output/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim.csv"
-  shell:
-    "python make_pairwise_information.py -s {wildcards.subset} -k {wildcards.k} -d {wildcards.dimension}"
+  run:
+    pairwise_information(wildcards.subset, wildcards.k, wildcards.dimension)
 
 rule plot:
   input:
-    "output/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim.csv"
+    rules.pairwise_information.output
   output:
     "plots/HIV-LANL_subset-{subset}_{k}-mers_{dimension}-dim.png"
-  shell:
-    "python make_plot.py -s {wildcards.subset} -k {wildcards.k} -d {wildcards.dimension}"
+  run:
+    plot(wildcards.subset, wildcards.k, wildcards.dimension)
 
 SUBSETS = ["1000"]
 KS = ["3", "4", "5"]
