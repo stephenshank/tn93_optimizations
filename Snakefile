@@ -1,8 +1,16 @@
 from src import *
 
+rule uncompressed_data:
+  input:
+    "input/HIV-LANL-unaligned.fasta.tar.gz"
+  output:
+    "input/HIV-LANL-unaligned.fasta"
+  shell:
+    "tar xvzf input/HIV-LANL-unaligned.fasta.tar.gz"
+
 rule subset:
   input:
-    fasta="input/HIV-LANL-unaligned.fasta"
+    fasta=rules.uncompressed_data.output[0]
   output:
     fasta="output/HIV-LANL-unaligned_subset-{subset}.fasta"
   run:

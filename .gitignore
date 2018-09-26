@@ -1,6 +1,6 @@
 .DS_Store
 .snakemake
 __pycache__
-input
+input/HIV-LANL-unaligned.fasta
 output
 plots
