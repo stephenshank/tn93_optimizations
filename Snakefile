@@ -20,15 +20,15 @@ rule alignment_bam:
   input:
     rules.subset.output.fasta
   output:
-    "output/{subset}/env.bam"
+    "output/{subset}/{gene}/mapped.bam"
   shell:
-    "bealign -r HXB2_env {input} {output}"
+    "bealign -r HXB2_{wildcards.gene} {input} {output}"
 
 rule alignment:
   input:
     rules.alignment_bam.output
   output:
-    "output/{subset}/env_nuc.fasta"
+    "output/{subset}/{gene}/nuc.fasta"
   shell:
     "bam2msa {input} {output}"
 
@@ -36,7 +36,7 @@ rule protein_alignment:
   input:
     rules.alignment.output
   output:
-    "output/{subset}/env_aa.fasta"
+    "output/{subset}/{gene}/aa.fasta"
   shell:
     "translate {input} > {output}"
 
@@ -44,56 +44,51 @@ rule tn93_distances:
   input:
     rules.alignment.output
   output:
-    "output/{subset}/env_tn93.csv"
+    "output/{subset}/{gene}/tn93.csv"
   shell:
     "tn93 -o {output} -t 1 {input}"
 
 rule kmers:
   input:
-    fasta="output/{subset}/env_{char}.fasta"
+    fasta="output/{subset}/{gene}/{char}.fasta"
   output:
-    csv="output/{subset}/{k}/{char}_kmers.csv"
+    csv="output/{subset}/{gene}/{k}/{char}_kmers.csv"
   run:
     extract_kmer_frequencies(input.fasta, output.csv, wildcards.k)
 
-rule tsne_distances:
+rule dimensionality_reduction:
   input:
     csv=rules.kmers.output.csv
   output:
-    csv="output/{subset}/{k}/{char}_{dimension}d_tsne.csv"
+    csv="output/{subset}/{gene}/{k}/{char}_{dimension}d_{method}.csv"
   run:
-    tsne_distances(input.csv, output.csv, wildcards.dimension)
+    dimensionality_reduction(input.csv, output.csv, wildcards.dimension, wildcards.method)
 
 rule pairwise_information:
   input:
-    rules.tn93_distances.output,
-    rules.tsne_distances.output.csv
+    tn93=rules.tn93_distances.output[0],
+    dr=rules.dimensionality_reduction.output.csv
   output:
-    "output/{subset}/{k}/pairwise_{char}_{dimension}d.csv"
+    "output/{subset}/{gene}/{k}/pairwise_{char}_{dimension}d_{method}.csv"
   run:
-    pairwise_information(wildcards.subset, wildcards.k,  wildcards.char, wildcards.dimension)
+    pairwise_information(input.tn93, input.dr, output[0], wildcards.dimension)
 
 rule plot:
   input:
-    rules.pairwise_information.output
+    script="src/make_plot.py",
+    csv=rules.pairwise_information.output
   output:
-    "output/{subset}/{k}/plots/{char}_{dimension}d.png"
+    png="output/{subset}/{gene}/{k}/{char}_{dimension}d_{method}.png"
   run:
-    plot(wildcards.subset, wildcards.k, wildcards.char, wildcards.dimension)
+    plot(input.csv[0], output.png)
 
-SUBSETS = ["1000"]
-NUCLEOTIDE_KS = ["3", "4", "5"]
-DIMENSIONS = ["2", "3"]
 rule all:
   input:
     expand(
-      "output/{subset}/{k}/plots/nuc_{dimension}d.png",
-      subset=SUBSETS,
-      k=NUCLEOTIDE_KS,
-      dimension=DIMENSIONS
-    ),
-    expand(
-      "output/{subset}/2/plots/aa_{dimension}d.png",
-      subset=SUBSETS,
-      dimension=DIMENSIONS
+      "output/{subset}/{gene}/{k}/nuc_{dimension}d_{method}.png",
+      subset=[125, 250],
+      gene=["env", "gag", "pol", "rt"],
+      k=[2,3,4,5],
+      dimension=[2,3],
+      method=["pca", "tsne"]
     )

@@ -3,14 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def plot(subset, k, char, dimension):
-  parameters = ( subset, k, char, dimension )
-
-  pairwise_filename = "output/%s/%s/pairwise_%s_%sd.csv" % parameters
-  tn93_df = pd.read_csv(pairwise_filename)
+def plot(input, output):
+  tn93_df = pd.read_csv(input)
   max_tsne_distance = tn93_df['TSNE Euclidean Distance'].max()
   tn93_df['Normalized TSNE Euclidean Distance'] = tn93_df['TSNE Euclidean Distance'] / max_tsne_distance
-  plot_filename = "output/%s/%s/plots/%s_%sd.png" % parameters
   below_threshold = tn93_df['TN93 Distance'] <= 1
   ax = sns.jointplot(
     x="TN93 Distance",
@@ -19,8 +15,11 @@ def plot(subset, k, char, dimension):
     kind='hex'
   )
   plt.subplots_adjust(top=0.9)
-  title_params = ( subset, char, k )
-  title_str = '%s %s %s-mers, method=t-sne, reduced' % title_params
+  _, subset, gene, k, info = input.split('/')
+  _, char, dimension, method = info.split('_')
+  method = method.split('.')[0]
+  title_params = ( gene, subset, char, k, method )
+  title_str = '%s - %s %s %s-mers, method=%s, reduced' % title_params
   ax.fig.suptitle(title_str)
-  plt.savefig(plot_filename)
+  plt.savefig(output)
 

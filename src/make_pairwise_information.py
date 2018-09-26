@@ -4,19 +4,15 @@ import numpy as np
 import pandas as pd
 
 
-def pairwise_information(subset, k, char, dimension):
+def pairwise_information(tn93_input, dr_input, output, dimension):
   dimension = int(dimension)
-  parameters = ( subset, k, char, dimension )
-
-  reduced_csv_filename = "output/%s/%s/%s_%dd_tsne.csv" % parameters
   reduced_dict = {}
-  with open(reduced_csv_filename) as csv_file:
+  with open(dr_input) as csv_file:
     reduced_csv = csv.DictReader(csv_file)
     for row in reduced_csv:
       reduced_dict[row['header']] = {'x'+str(i): float(row['x'+str(i)]) for i in range(dimension)}
 
-  tn93_distance_filename = "output/%s/env_tn93.csv" % subset
-  tn93_df = pd.read_csv(tn93_distance_filename).rename(columns={'Distance': 'TN93 Distance'})
+  tn93_df = pd.read_csv(tn93_input).rename(columns={'Distance': 'TN93 Distance'})
   for i in range(dimension):
       tn93_df['x'+str(i)] = np.zeros(len(tn93_df))
       tn93_df['y'+str(i)] = np.zeros(len(tn93_df))
@@ -30,6 +26,5 @@ def pairwise_information(subset, k, char, dimension):
       tn93_df['TSNE Euclidean Distance'] += (tn93_df['x'+str(i)]-tn93_df['y'+str(i)])**2
   tn93_df['TSNE Euclidean Distance'] = np.sqrt(tn93_df['TSNE Euclidean Distance'])
 
-  pairwise_filename = "output/%s/%s/pairwise_%s_%dd.csv" % parameters
-  tn93_df.to_csv(pairwise_filename, index=False)
+  tn93_df.to_csv(output, index=False)
 
