@@ -22,7 +22,9 @@ def pairwise_information(tn93_input, dr_input, output, dimension):
         tn93_df.loc[tn93_df.ID2 == key, 'y'+str(i)] = val['x'+str(i)]
 
   tn93_df['TSNE Euclidean Distance'] = np.zeros(len(tn93_df))
+  tn93_df['TSNE L1 Distance'] = np.zeros(len(tn93_df))
   for i in range(dimension):
+      tn93_df['TSNE L1 Distance'] += np.abs(tn93_df['x'+str(i)]-tn93_df['y'+str(i)])
       tn93_df['TSNE Euclidean Distance'] += (tn93_df['x'+str(i)]-tn93_df['y'+str(i)])**2
   tn93_df['TSNE Euclidean Distance'] = np.sqrt(tn93_df['TSNE Euclidean Distance'])
 

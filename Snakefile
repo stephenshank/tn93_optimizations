@@ -66,6 +66,7 @@ rule dimensionality_reduction:
 
 rule pairwise_information:
   input:
+    script="src/make_pairwise_information.py",
     tn93=rules.tn93_distances.output[0],
     dr=rules.dimensionality_reduction.output.csv
   output:
@@ -75,20 +76,35 @@ rule pairwise_information:
 
 rule plot:
   input:
-    script="src/make_plot.py",
+    script="src/output.py",
     csv=rules.pairwise_information.output
   output:
-    png="output/{subset}/{gene}/{k}/{char}_{dimension}d_{method}.png"
+    png="output/{subset}/{gene}/{k}/{char}_{dimension}d_{method}_{distance}.png"
   run:
-    plot(input.csv[0], output.png)
+    plot(input.csv[0], output.png, wildcards.distance)
 
-rule all:
+rule small:
   input:
     expand(
-      "output/{subset}/{gene}/{k}/nuc_{dimension}d_{method}.png",
+      "output/{subset}/{gene}/{k}/nuc_{dimension}d_{method}_{distance}.png",
       subset=[125, 250],
       gene=["env", "gag", "pol", "rt"],
       k=[2,3,4,5],
       dimension=[2,3],
-      method=["pca", "tsne"]
+      method=["pca", "tsne"],
+      distance=['Euclidean', 'L1']
     )
+ 
+TABLE_SUBSETS = range(100, 200, 50)
+rule table:
+  input:
+    script="src/output.py",
+    pairwise=expand(
+      "output/{subset}/{{gene}}/{{k}}/pairwise_{{char}}_{{dimension}}d_{{method}}.csv",
+      subset=TABLE_SUBSETS
+    )
+  output:
+    "tables/{gene}/{k}/{char}_{dimension}d_{method}.csv"
+  run:
+    table(output[0], TABLE_SUBSETS)
+
