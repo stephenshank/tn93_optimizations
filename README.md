@@ -1,5 +1,5 @@
 ### Dependencies
-Biopython, snakemake, conda. See `environment.yml`.
+Biopython, snakemake, conda, Bioext. See `environment.yml`.
 
 ### Usage
 ```
