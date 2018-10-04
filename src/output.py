@@ -37,6 +37,7 @@ def table(output, subsets):
     writer.writerow([
       'subset',
       'distance',
+      'number of desired pairs',
       'max comparisons',
       'max recovered',
       '99p comparisons',
@@ -79,6 +80,7 @@ def table(output, subsets):
         row = [
           subset,
           distance,
+          number_of_desired_pairs,
           max_pairs,
           max_recovered,
           dp_99_pairs,
