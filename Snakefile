@@ -22,15 +22,23 @@ rule alignment_bam:
   output:
     "output/{subset}/{gene}/mapped.bam"
   shell:
-    "bealign -r HXB2_{wildcards.gene} {input} {output}"
+    "bealign -K -r HXB2_{wildcards.gene} {input} {output}"
 
-rule alignment:
+rule alignment_with_reference:
   input:
     rules.alignment_bam.output
   output:
-    "output/{subset}/{gene}/nuc.fasta"
+    "output/{subset}/{gene}/nuc_ref.fasta"
   shell:
     "bam2msa {input} {output}"
+
+rule alignment:
+  input:
+    rules.alignment_with_reference.output
+  output:
+    "output/{subset}/{gene}/nuc.fasta"
+  run:
+    trim_first(input[0], output[0])
 
 rule protein_alignment:
   input:
@@ -50,17 +58,36 @@ rule tn93_distances:
 
 rule kmers:
   input:
+    script="src/features.py",
     fasta="output/{subset}/{gene}/{char}.fasta"
   output:
     csv="output/{subset}/{gene}/{k}/{char}_kmers.csv"
   run:
     extract_kmer_frequencies(input.fasta, output.csv, wildcards.k)
 
+rule windows:
+  input:
+    fasta=rules.alignment_with_reference.output[0]
+  output:
+    csv="output/{subset}/{gene}/window_{length}.csv"
+  run:
+    window(input.fasta, output.csv, wildcards.length)
+
+rule concat:
+  input:
+    kmers=rules.kmers.output.csv,
+    windows=rules.windows.output.csv
+  output:
+    csv="output/{subset}/{gene}/{k}/concat_{char}_{length}.csv"
+  run:
+    concat(input.kmers, input.windows, output.csv)
+
 rule dimensionality_reduction:
   input:
-    csv=rules.kmers.output.csv
+    script="src/run_dimensionality_reduction.py",
+    csv=rules.concat.output.csv
   output:
-    csv="output/{subset}/{gene}/{k}/{char}_{dimension}d_{method}.csv"
+    csv="output/{subset}/{gene}/{k}/{char}_{length}_{dimension}d_{method}.csv"
   run:
     dimensionality_reduction(input.csv, output.csv, wildcards.dimension, wildcards.method)
 
@@ -70,7 +97,7 @@ rule pairwise_information:
     tn93=rules.tn93_distances.output[0],
     dr=rules.dimensionality_reduction.output.csv
   output:
-    "output/{subset}/{gene}/{k}/pairwise_{char}_{dimension}d_{method}.csv"
+    "output/{subset}/{gene}/{k}/pairwise_{char}_{length}_{dimension}d_{method}.csv"
   run:
     pairwise_information(input.tn93, input.dr, output[0], wildcards.dimension)
 
@@ -79,7 +106,7 @@ rule plot:
     script="src/output.py",
     csv=rules.pairwise_information.output
   output:
-    png="output/{subset}/{gene}/{k}/{char}_{dimension}d_{method}_{distance}.png"
+    png="output/{subset}/{gene}/{k}/{char}_{length}_{dimension}d_{method}_{distance}.png"
   run:
     plot(input.csv[0], output.png, wildcards.distance)
 
@@ -95,16 +122,16 @@ rule small:
       distance=['Euclidean', 'L1']
     )
  
-TABLE_SUBSETS = range(100, 200, 50)
+TABLE_SUBSETS = range(250, 2001, 250)
 rule table:
   input:
     script="src/output.py",
     pairwise=expand(
-      "output/{subset}/{{gene}}/{{k}}/pairwise_{{char}}_{{dimension}}d_{{method}}.csv",
+      "output/{subset}/{{gene}}/{{k}}/pairwise_{{char}}_{{length}}_{{dimension}}d_{{method}}.csv",
       subset=TABLE_SUBSETS
     )
   output:
-    "tables/{gene}/{k}/{char}_{dimension}d_{method}.csv"
+    "tables/{gene}/{k}/{char}_{length}_{dimension}d_{method}.csv"
   run:
     table(output[0], TABLE_SUBSETS)
 

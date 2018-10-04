@@ -12,3 +12,9 @@ def subset(input, output, number):
       'fasta'
     )
 
+
+def trim_first(input, output):
+    records = SeqIO.parse(input, 'fasta')
+    record = next(records)
+    SeqIO.write(records, output, 'fasta')
+

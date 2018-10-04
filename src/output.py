@@ -20,17 +20,17 @@ def plot(input, output, distance):
   )
   plt.subplots_adjust(top=0.9)
   _, subset, gene, k, info = input.split('/')
-  _, char, dimension, method = info.split('_')
+  _, char, length, dimension, method = info.split('_')
   method = method.split('.')[0]
-  title_params = ( gene, subset, char, k, method, distance )
-  title_str = '%s - %s %s %s-mers, method=%s, %s' % title_params
+  title_params = ( gene, length, subset, char, k, method, distance )
+  title_str = '%s - %s window, %s %s %s-mers, method=%s, %s' % title_params
   ax.fig.suptitle(title_str)
   plt.savefig(output)
 
 
 def table(output, subsets):
   _, gene, k, info = output.split('/')
-  char, dimension, method = info.split('_')
+  char, length, dimension, method = info.split('_')
   method = method.split('.')[0]
   with open(output, 'w') as csv_file:
     writer = csv.writer(csv_file)
@@ -47,8 +47,8 @@ def table(output, subsets):
       '75p recovered'
     ])
     for subset in subsets:
-      filename_params = ( subset, gene, k, char, dimension, method )
-      filename = 'output/%d/%s/%s/pairwise_%s_%s_%s.csv' % filename_params
+      filename_params = ( subset, gene, k, char, length, dimension, method )
+      filename = 'output/%d/%s/%s/pairwise_%s_%s_%s_%s.csv' % filename_params
       df = pd.read_csv(filename)
       total_pairs = len(df)
       for distance in ['Euclidean', 'L1']:
