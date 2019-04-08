@@ -1,5 +1,13 @@
 from src import *
 
+rule paper:
+  input:
+    "paper/Draft.tex"
+  output:
+    "paper/Draft.pdf"
+  shell:
+    "pdflatex -output-directory=paper {input}"
+
 rule uncompressed_data:
   input:
     "input/HIV-LANL-unaligned.fasta.tar.gz"

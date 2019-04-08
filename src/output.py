@@ -11,12 +11,13 @@ def plot(input, output, distance):
   tn93_df['Normalized TSNE Euclidean Distance'] = tn93_df['TSNE Euclidean Distance'] / max_tsne_distance
   max_tsne_distance = tn93_df['TSNE L1 Distance'].max()
   tn93_df['Normalized TSNE L1 Distance'] = tn93_df['TSNE L1 Distance'] / max_tsne_distance
-  below_threshold = tn93_df['TN93 Distance'] <= .015
+  below_threshold = tn93_df['TN93 Distance'] <= 1
   ax = sns.jointplot(
     x="TN93 Distance",
     y="Normalized TSNE %s Distance" % distance,
     data=tn93_df[below_threshold],
-    kind='hex'
+    alpha=.05
+    #kind='hex'
   )
   plt.subplots_adjust(top=0.9)
   _, subset, gene, k, info = input.split('/')
